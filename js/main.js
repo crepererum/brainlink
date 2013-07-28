@@ -45,36 +45,18 @@ function Player() {
 	self.enumerateFingers = enumerateFingers;
 
 	function enumerateFingers() {
-		var i, toSort, relX, relY, xMean, yMean, meanArg;
+		var i, mean;
 
-		toSort = [];
-		xMean = 0;
-		yMean = 0;
+		mean = {
+			x: 0,
+			y: 0
+		};
 		for (i = 0; i < self.fingers.length; ++i) {
-			relX = self.fingers[i].x - self.x;
-			relY = self.fingers[i].y - self.y;
-
-			toSort.push([
-					self.fingers[i],
-					pos2arg(relX, relY)]);
-
-			xMean += relX / self.fingers.length;
-			yMean += relY / self.fingers.length;
+			mean.x += self.fingers[i].x / self.fingers.length;
+			mean.y += self.fingers[i].y / self.fingers.length;
 		}
 
-		meanArg = pos2arg(xMean, yMean);
-		for (i = 0; i < toSort.length; ++i) {
-			// add additional 2 * Math.PI to avoid modulo operation on negative numbers
-			toSort[i][1] = (toSort[i][1] - meanArg + 3 * Math.PI) % (2 * Math.PI);
-		}
-
-		toSort.sort(function sortFingers(a,b) {
-			return a[1] - b[1];
-		});
-
-		for (i = 0; i < toSort.length; ++i) {
-			toSort[i][0].id = i + 1;
-		}
+		enumerateObjects(self.fingers, self, mean);
 	}
 }
 
@@ -107,6 +89,48 @@ function pos2arg(x, y) {
 		return 1.5 * Math.PI;
 	} {
 		return NaN;
+	}
+}
+
+function enumerateObjects(objects, center, base) {
+	"use strict";
+	var i, toSort, relX, relY, baseArg;
+
+	if (!center) {
+		center = {
+			x: 0,
+			y: 0
+		};
+	}
+	if (!base) {
+		base = {
+			x: 0,
+			y: 1
+		}
+	}
+
+	toSort = [];
+	for (i = 0; i < objects.length; ++i) {
+		relX = objects[i].x - center.x;
+		relY = objects[i].y - center.y;
+
+		toSort.push([
+				objects[i],
+				pos2arg(relX, relY)]);
+	}
+
+	baseArg = pos2arg(base.x - center.x, base.y - center.y);
+	for (i = 0; i < toSort.length; ++i) {
+		// add additional 2 * Math.PI to avoid modulo operation on negative numbers
+		toSort[i][1] = (toSort[i][1] - baseArg + 3 * Math.PI) % (2 * Math.PI);
+	}
+
+	toSort.sort(function sortObjects(a,b) {
+		return a[1] - b[1];
+	});
+
+	for (i = 0; i < toSort.length; ++i) {
+		toSort[i][0].id = i + 1;
 	}
 }
 
@@ -219,6 +243,7 @@ function keyPress(evt) {
 	if (evt.keyCode === 32) {
 		if ((gameState == GAME_STATES.SEARCH_PLAYERS) && (players.length > 0)) {
 			say("let's begin");
+			enumerateObjects(players)
 			gameState = GAME_STATES.PLAY;
 		}
 	}
