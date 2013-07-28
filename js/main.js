@@ -1,5 +1,8 @@
 var canvas, ctx;
 
+var leap;
+var leapPlayerMap = new Object();
+
 var players = [];
 
 function Finger() {
@@ -19,6 +22,16 @@ function Player() {
 	self.x = 0;
 	self.y = 0;
 	self.fingers = [];
+}
+
+function say(msg, callback) {
+	"use strict";
+
+	console.log(msg);
+
+	if (callback) {
+		callback();
+	}
 }
 
 function render() {
@@ -49,6 +62,37 @@ function render() {
 	window.requestAnimationFrame(render);
 }
 
+function parseFrame(frame) {
+	"use strict";
+	var i, hand, nextLeapPlayerMap, nextPlayers, player;
+
+	nextPlayers = [];
+	nextLeapPlayerMap = new Object();
+
+	for (i = 0; i < frame.hands.length; ++i) {
+		hand = frame.hands[i];
+
+		if ((hand.fingers.length == 5) && (!leapPlayerMap[hand.id])) {
+			say("player detected");
+
+			player = new Player();
+			player.x = hand.palmPosition[0];
+			player.y = hand.palmPosition[2];
+
+			nextPlayers.push(player);
+			nextLeapPlayerMap[hand.id] = player;
+		} else if (leapPlayerMap[hand.id]) {
+			player = leapPlayerMap[hand.id];
+
+			nextPlayers.push(player);
+			nextLeapPlayerMap[hand.id] = player;
+		}
+	}
+
+	players = nextPlayers;
+	leapPlayerMap = nextLeapPlayerMap;
+}
+
 function init() {
 	"use strict";
 
@@ -57,6 +101,10 @@ function init() {
 	canvas.width = canvas.clientWidth;
 
 	ctx = canvas.getContext("2d");
+
+	leap = new Leap.Controller();
+	leap.on("frame", parseFrame);
+	leap.connect();
 
 	window.requestAnimationFrame(render);
 }
