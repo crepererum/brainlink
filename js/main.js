@@ -374,7 +374,7 @@ function logic() {
 
 		// check sequence
 		if (!checkSequence()) {
-			say("Player " + activePlayer + ", you are wrong! Game members, you are free to punish him! Press space when you are ready!");
+			say("Player " + activePlayer + ", you are wrong! Game members, feel free to punish him! Press space when you are ready!");
 			freeze = FREEZE_STATES.WAIT_PUNISH;
 		}
 	}
