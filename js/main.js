@@ -8,7 +8,6 @@ var leapPlayerMap = new Object();
 
 var gameState;
 var freeze = false;
-var waitForPunish = false;
 var players = [];
 var totalPlayers;
 var activePlayer;
@@ -26,6 +25,12 @@ var GAME_STATES = {
 	SEARCH_PLAYERS: 1,
 	PLAY: 2,
 	END: 3
+};
+
+var FREEZE_STATES = {
+	NONE: false,
+	WAIT_PUNISH: 1,
+	WAIT_SPEECH: 2
 };
 
 /**********************************************************/
@@ -290,13 +295,14 @@ function keyPress(evt) {
 			gameState = GAME_STATES.PLAY;
 		}
 
-		if (waitForPunish) {
+		if (freeze === FREEZE_STATES.WAIT_PUNISH) {
 			say("Player " + activePlayer + ", let's try again!");
 
+			freeze = FREEZE_STATES.WAIT_SPEECH;
 			window.setTimeout(function() {
 				currentFingers = new Object();
 				currentSequence = [];
-				waitForPunish = false;
+				freeze = FREEZE_STATES.NONE;
 			}, 400);
 		}
 	}
@@ -306,62 +312,67 @@ function logic() {
 	"use strict";
 	var i, finger, nextFingers, player;
 
-	if ((gameState == GAME_STATES.PLAY) && !waitForPunish) {
-		if (players.length > 0) {
-			// next player?
-			if ((!activePlayer) || ((currentSequence.length > storedSequence.length) && checkSequence())) {
-				storedSequence = currentSequence;
-				currentSequence = [];
+	// next player?
+	if (!freeze
+			&& (gameState == GAME_STATES.PLAY)
+			&& (players.length > 0)
+			&& ((!activePlayer) || ((currentSequence.length > storedSequence.length) && checkSequence()))) {
+		storedSequence = currentSequence;
+		currentSequence = [];
 
-				if (!activePlayer) {
-					activePlayer = 1;
-				}
-
-				while (!getPlayer(activePlayer)) {
-					activePlayer = 1 + (activePlayer % totalPlayers);
-				}
-
-				currentFingers = new Object();
-
-				freeze = true;
-				window.setTimeout(function() {
-					say("Player " + activePlayer + ", it's your turn!");
-					window.setTimeout(function() {
-						freeze = false;
-					}, 200);
-				}, 400);
-			}
-
-			// analyze state
-			if (!freeze) {
-				player = getPlayer(activePlayer);
-
-				// check fingers
-				nextFingers = new Object();
-				for (i = 0; i < player.fingers.length; ++i) {
-					finger = player.fingers[i];
-
-					if (finger.active) {
-						nextFingers[finger.id] = true;
-
-						if (!currentFingers[finger.id]) {
-							say(finger.id);
-							currentSequence.push(finger.id);
-						}
-					}
-				}
-				currentFingers = nextFingers;
-
-				// check sequence
-				if (!checkSequence()) {
-					say("Player " + activePlayer + ", you are wrong! Game members, you are free to punish him! Press space when you are ready!");
-					waitForPunish = true;
-				}
-			}
-		} else {
-			say("You are drunk. The game ends now!");
-			gameState = GAME_STATES.END;
+		if (!activePlayer) {
+			activePlayer = 1;
 		}
+
+		while (!getPlayer(activePlayer)) {
+			activePlayer = 1 + (activePlayer % totalPlayers);
+		}
+
+		currentFingers = new Object();
+
+		freeze = FREEZE_STATES.WAIT_SPEECH;
+		window.setTimeout(function() {
+			say("Player " + activePlayer + ", it's your turn!");
+
+			window.setTimeout(function() {
+				freeze = FREEZE_STATES.NONE;
+			}, 200);
+		}, 400);
+	}
+
+	// analyze state
+	if (!freeze
+			&& (gameState == GAME_STATES.PLAY)
+			&& (player = getPlayer(activePlayer))) {
+		// check fingers
+		nextFingers = new Object();
+		for (i = 0; i < player.fingers.length; ++i) {
+			finger = player.fingers[i];
+
+			if (finger.active) {
+				nextFingers[finger.id] = true;
+
+				if (!currentFingers[finger.id]) {
+					say(finger.id);
+					currentSequence.push(finger.id);
+				}
+			}
+		}
+		currentFingers = nextFingers;
+
+		// check sequence
+		if (!checkSequence()) {
+			say("Player " + activePlayer + ", you are wrong! Game members, you are free to punish him! Press space when you are ready!");
+			freeze = FREEZE_STATES.WAIT_PUNISH;
+		}
+	}
+
+	if (!freeze
+			&& (gameState == GAME_STATES.PLAY)
+			&& (players.length === 0)) {
+		say("You are drunk. The game ends now!");
+		activePlayer = undefined;
+		gameState = GAME_STATES.END;
 	}
 
 	window.setTimeout(logic, 50);
