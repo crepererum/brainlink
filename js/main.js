@@ -263,7 +263,13 @@ function parseFrame(frame) {
 
 				finger.x = lfinger.tipPosition[0];
 				finger.y = lfinger.tipPosition[2];
-				finger.active = ((hand.palmPosition[1] - lfinger.tipPosition[1]) > 20);
+
+				if (finger.active && ((hand.palmPosition[1] - lfinger.tipPosition[1]) < 15)) {
+					finger.active = false;
+				}
+				if (!finger.active && ((hand.palmPosition[1] - lfinger.tipPosition[1]) > 20)) {
+					finger.active = true;
+				}
 
 				nextFingers.push(finger);
 				nextLeapFingerMap[lfinger.id] = finger;
