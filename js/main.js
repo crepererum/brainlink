@@ -67,7 +67,12 @@ function Player() {
 function say(msg, callback) {
 	"use strict";
 
-	console.log(msg);
+	console.log('"' + msg + '"');
+	meSpeak.speak(msg, {
+		pitch: 40,
+		speed: 170,
+		wordgap: 1
+	});
 
 	if (callback) {
 		callback();
@@ -182,7 +187,7 @@ function parseFrame(frame) {
 		player = undefined;
 
 		if ((gameState == GAME_STATES.SEARCH_PLAYERS) && (!leapPlayerMap[hand.id]) && (hand.fingers.length == 5)) {
-			say("player detected");
+			say("Player detected.");
 			player = new Player();
 		} else if (leapPlayerMap[hand.id]) {
 			player = leapPlayerMap[hand.id];
@@ -242,7 +247,7 @@ function keyPress(evt) {
 	// space?
 	if (evt.keyCode === 32) {
 		if ((gameState == GAME_STATES.SEARCH_PLAYERS) && (players.length > 0)) {
-			say("let's begin");
+			say("Let's begin!");
 			enumerateObjects(players)
 			gameState = GAME_STATES.PLAY;
 		}
@@ -264,11 +269,16 @@ function init() {
 	leap.on("frame", parseFrame);
 	leap.connect();
 
+	meSpeak.loadConfig("data/mespeak_config.json");
+	meSpeak.loadVoice("data/mespeak_en.json");
+
 	document.addEventListener("keydown", keyPress);
 
 	gameState = GAME_STATES.SEARCH_PLAYERS;
 
 	window.requestAnimationFrame(render);
+
+	say("Welcome, my name is Aurora. I'm your brainmaster. Just put your 5 finger hands over the leap device and press space when all players are detected.")
 }
 
 
