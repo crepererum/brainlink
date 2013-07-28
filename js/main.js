@@ -7,7 +7,15 @@ var leap;
 var leapPlayerMap = new Object();
 
 var gameState;
+var freeze = false;
+var waitForPunish = false;
 var players = [];
+var totalPlayers;
+var activePlayer;
+
+var storedSequence = [];
+var currentSequence = [];
+var currentFingers = new Object();
 
 
 /**********************************************************/
@@ -16,7 +24,8 @@ var players = [];
 var GAME_STATES = {
 	BOOT: 0,
 	SEARCH_PLAYERS: 1,
-	PLAY: 2
+	PLAY: 2,
+	END: 3
 };
 
 /**********************************************************/
@@ -68,7 +77,7 @@ function say(msg, callback) {
 	"use strict";
 
 	console.log('"' + msg + '"');
-	meSpeak.speak(msg, {
+	meSpeak.speak(String(msg), {
 		pitch: 40,
 		speed: 170,
 		wordgap: 1
@@ -139,6 +148,30 @@ function enumerateObjects(objects, center, base) {
 	}
 }
 
+function getPlayer(id) {
+	"use strict";
+	var i;
+
+	for (i = 0; i < players.length; ++i) {
+		if (players[i].id === id) {
+			return players[i];
+		}
+	}
+}
+
+function checkSequence() {
+	"use strict";
+	var i;
+
+	for (i = 0; i < Math.min(storedSequence.length, currentSequence.length); ++i) {
+		if (storedSequence[i] != currentSequence[i]) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 function render() {
 	"use strict";
 	var i, j, finger, player, scaleFactor;
@@ -155,7 +188,11 @@ function render() {
 	for (i = 0; i < players.length; ++i) {
 		player = players[i];
 
-		ctx.fillStyle = "#ffffff";
+		if (player.id === activePlayer) {
+			ctx.fillStyle = "#00ff00";
+		} else {
+			ctx.fillStyle = "#ffffff";
+		}
 		ctx.font = "30px Arial";
 		ctx.fillText(player.id, player.x, player.y);
 
@@ -249,9 +286,85 @@ function keyPress(evt) {
 		if ((gameState == GAME_STATES.SEARCH_PLAYERS) && (players.length > 0)) {
 			say("Let's begin!");
 			enumerateObjects(players)
+			totalPlayers = players.length;
 			gameState = GAME_STATES.PLAY;
 		}
+
+		if (waitForPunish) {
+			say("Player " + activePlayer + ", let's try again!");
+
+			window.setTimeout(function() {
+				currentFingers = new Object();
+				currentSequence = [];
+				waitForPunish = false;
+			}, 400);
+		}
 	}
+}
+
+function logic() {
+	"use strict";
+	var i, finger, nextFingers, player;
+
+	if ((gameState == GAME_STATES.PLAY) && !waitForPunish) {
+		if (players.length > 0) {
+			// next player?
+			if ((!activePlayer) || ((currentSequence.length > storedSequence.length) && checkSequence())) {
+				storedSequence = currentSequence;
+				currentSequence = [];
+
+				if (!activePlayer) {
+					activePlayer = 1;
+				}
+
+				while (!getPlayer(activePlayer)) {
+					activePlayer = 1 + (activePlayer % totalPlayers);
+				}
+
+				currentFingers = new Object();
+
+				freeze = true;
+				window.setTimeout(function() {
+					say("Player " + activePlayer + ", it's your turn!");
+					window.setTimeout(function() {
+						freeze = false;
+					}, 200);
+				}, 400);
+			}
+
+			// analyze state
+			if (!freeze) {
+				player = getPlayer(activePlayer);
+
+				// check fingers
+				nextFingers = new Object();
+				for (i = 0; i < player.fingers.length; ++i) {
+					finger = player.fingers[i];
+
+					if (finger.active) {
+						nextFingers[finger.id] = true;
+
+						if (!currentFingers[finger.id]) {
+							say(finger.id);
+							currentSequence.push(finger.id);
+						}
+					}
+				}
+				currentFingers = nextFingers;
+
+				// check sequence
+				if (!checkSequence()) {
+					say("Player " + activePlayer + ", you are wrong! Game members, you are free to punish him! Press space when you are ready!");
+					waitForPunish = true;
+				}
+			}
+		} else {
+			say("You are drunk. The game ends now!");
+			gameState = GAME_STATES.END;
+		}
+	}
+
+	window.setTimeout(logic, 50);
 }
 
 function init() {
@@ -277,6 +390,7 @@ function init() {
 	gameState = GAME_STATES.SEARCH_PLAYERS;
 
 	window.requestAnimationFrame(render);
+	window.setTimeout(logic, 50);
 
 	say("Welcome, my name is Aurora. I'm your brainmaster. Just put your 5 finger hands over the leap device and press space when all players are detected.")
 }
