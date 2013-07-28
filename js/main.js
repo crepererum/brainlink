@@ -23,6 +23,7 @@ function Player() {
 	self.y = 0;
 	self.fingers = [];
 	self.leapFingerMap = new Object();
+	self.active = false;
 
 	self.enumerateFingers = enumerateFingers;
 
@@ -101,13 +102,17 @@ function render() {
 		player = players[i];
 
 		ctx.fillStyle = "#ffffff";
-
 		ctx.font = "30px Arial";
 		ctx.fillText(player.id, player.x, player.y);
 
 		for (j = 0; j < player.fingers.length; ++j) {
 			finger = player.fingers[j];
 
+			if (finger.active) {
+				ctx.fillStyle = "#00ff00";
+			} else {
+				ctx.fillStyle = "#ffffff";
+			}
 			ctx.font = "15px Arial";
 			ctx.fillText(finger.id, finger.x, finger.y);
 		}
@@ -157,6 +162,7 @@ function parseFrame(frame) {
 
 				finger.x = lfinger.tipPosition[0];
 				finger.y = lfinger.tipPosition[2];
+				finger.active = ((hand.palmPosition[1] - lfinger.tipPosition[1]) > 20);
 
 				nextFingers.push(finger);
 				nextLeapFingerMap[lfinger] = finger;
