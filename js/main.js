@@ -23,6 +23,41 @@ function Player() {
 	self.y = 0;
 	self.fingers = [];
 	self.leapFingerMap = new Object();
+
+	self.enumerateFingers = enumerateFingers;
+
+	function enumerateFingers() {
+		var i, toSort, relX, relY, xMean, yMean, meanArg;
+
+		toSort = [];
+		xMean = 0;
+		yMean = 0;
+		for (i = 0; i < self.fingers.length; ++i) {
+			relX = self.fingers[i].x - self.x;
+			relY = self.fingers[i].y - self.y;
+
+			toSort.push([
+					self.fingers[i],
+					pos2arg(relX, relY)]);
+
+			xMean += relX / self.fingers.length;
+			yMean += relY / self.fingers.length;
+		}
+
+		meanArg = pos2arg(xMean, yMean);
+		for (i = 0; i < toSort.length; ++i) {
+			// add additional 2 * Math.PI to avoid modulo operation on negative numbers
+			toSort[i][1] = (toSort[i][1] - meanArg + 3 * Math.PI) % (2 * Math.PI);
+		}
+
+		toSort.sort(function sortFingers(a,b) {
+			return a[1] - b[1];
+		});
+
+		for (i = 0; i < toSort.length; ++i) {
+			toSort[i][0].id = i + 1;
+		}
+	}
 }
 
 function say(msg, callback) {
@@ -32,6 +67,20 @@ function say(msg, callback) {
 
 	if (callback) {
 		callback();
+	}
+}
+
+function pos2arg(x, y) {
+	if ((x > 0) && (y > 0)) {
+		return Math.atan(y / x);
+	} else if ((x < 0) && (y > 0)) {
+		return Math.PI - Math.atan(y / (-x));
+	} else if ((x < 0) && (y < 0)) {
+		return Math.PI + Math.atan((-y) / (-x));
+	} else if ((x > 0) && (y < 0)) {
+		return 2 * Math.PI - Math.atan((-y) / x);
+	} else {
+		return NaN;
 	}
 }
 
@@ -69,7 +118,7 @@ function render() {
 
 function parseFrame(frame) {
 	"use strict";
-	var i, j, finger, lfinger, hand, nextLeapFingerMap, nextFingers, nextLeapPlayerMap, nextPlayers, player;
+	var i, j, finger, fingersChanged, lfinger, hand, nextLeapFingerMap, nextFingers, nextLeapPlayerMap, nextPlayers, player;
 
 	nextPlayers = [];
 	nextLeapPlayerMap = new Object();
@@ -94,6 +143,7 @@ function parseFrame(frame) {
 
 			nextFingers = [];
 			nextLeapFingerMap = new Object();
+			fingersChanged = false;
 
 			for (j = 0; j < hand.fingers.length; ++j) {
 				lfinger = hand.fingers[j];
@@ -102,6 +152,7 @@ function parseFrame(frame) {
 					finger = player.leapFingerMap[lfinger.id];
 				} else {
 					finger = new Finger();
+					fingersChanged = true;
 				}
 
 				finger.x = lfinger.tipPosition[0];
@@ -111,8 +162,16 @@ function parseFrame(frame) {
 				nextLeapFingerMap[lfinger] = finger;
 			}
 
+			if (player.fingers.length !== nextFingers.length) {
+				fingersChanged = true;
+			}
+
 			player.fingers = nextFingers;
 			player.leapFingerMap = nextLeapFingerMap;
+
+			if (fingersChanged) {
+				player.enumerateFingers();
+			}
 		}
 	}
 
