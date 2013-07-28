@@ -266,7 +266,7 @@ function parseFrame(frame) {
 				finger.active = ((hand.palmPosition[1] - lfinger.tipPosition[1]) > 20);
 
 				nextFingers.push(finger);
-				nextLeapFingerMap[lfinger] = finger;
+				nextLeapFingerMap[lfinger.id] = finger;
 			}
 
 			if (player.fingers.length !== nextFingers.length) {
@@ -276,7 +276,7 @@ function parseFrame(frame) {
 			player.fingers = nextFingers;
 			player.leapFingerMap = nextLeapFingerMap;
 
-			if (fingersChanged) {
+			if (fingersChanged && (player.fingers.length === 5)) {
 				player.enumerateFingers();
 			}
 		}
