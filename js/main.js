@@ -361,7 +361,7 @@ function logic() {
 		for (i = 0; i < player.fingers.length; ++i) {
 			finger = player.fingers[i];
 
-			if (finger.active) {
+			if ((finger.active) && (finger.id !== 0)) {
 				nextFingers[finger.id] = true;
 
 				if (!currentFingers[finger.id]) {
