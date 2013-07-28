@@ -6,8 +6,18 @@ var canvas, ctx;
 var leap;
 var leapPlayerMap = new Object();
 
+var gameState;
 var players = [];
 
+
+/**********************************************************/
+/******************ENUMS***********************************/
+/**********************************************************/
+var GAME_STATES = {
+	BOOT: 0,
+	SEARCH_PLAYERS: 1,
+	PLAY: 2
+};
 
 /**********************************************************/
 /******************OBJECTS*********************************/
@@ -143,7 +153,7 @@ function parseFrame(frame) {
 		hand = frame.hands[i];
 		player = undefined;
 
-		if ((hand.fingers.length == 5) && (!leapPlayerMap[hand.id])) {
+		if ((gameState == GAME_STATES.SEARCH_PLAYERS) && (!leapPlayerMap[hand.id]) && (hand.fingers.length == 5)) {
 			say("player detected");
 			player = new Player();
 		} else if (leapPlayerMap[hand.id]) {
@@ -196,8 +206,24 @@ function parseFrame(frame) {
 	leapPlayerMap = nextLeapPlayerMap;
 }
 
+function keyPress(evt) {
+	"use strict";
+
+	evt.preventDefault();
+
+	// space?
+	if (evt.keyCode === 32) {
+		if ((gameState == GAME_STATES.SEARCH_PLAYERS) && (players.length > 0)) {
+			say("let's begin");
+			gameState = GAME_STATES.PLAY;
+		}
+	}
+}
+
 function init() {
 	"use strict";
+
+	gameState = GAME_STATES.BOOT;
 
 	canvas = document.getElementById("canvas");
 	canvas.height = canvas.clientHeight;
@@ -208,6 +234,10 @@ function init() {
 	leap = new Leap.Controller();
 	leap.on("frame", parseFrame);
 	leap.connect();
+
+	document.addEventListener("keydown", keyPress);
+
+	gameState = GAME_STATES.SEARCH_PLAYERS;
 
 	window.requestAnimationFrame(render);
 }
