@@ -71,18 +71,18 @@ function parseFrame(frame) {
 
 	for (i = 0; i < frame.hands.length; ++i) {
 		hand = frame.hands[i];
+		player = undefined;
 
 		if ((hand.fingers.length == 5) && (!leapPlayerMap[hand.id])) {
 			say("player detected");
-
 			player = new Player();
-			player.x = hand.palmPosition[0];
-			player.y = hand.palmPosition[2];
-
-			nextPlayers.push(player);
-			nextLeapPlayerMap[hand.id] = player;
 		} else if (leapPlayerMap[hand.id]) {
 			player = leapPlayerMap[hand.id];
+		}
+
+		if (player) {
+			player.x = hand.palmPosition[0];
+			player.y = hand.palmPosition[2];
 
 			nextPlayers.push(player);
 			nextLeapPlayerMap[hand.id] = player;
