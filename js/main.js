@@ -22,6 +22,7 @@ function Player() {
 	self.x = 0;
 	self.y = 0;
 	self.fingers = [];
+	self.leapFingerMap = new Object();
 }
 
 function say(msg, callback) {
@@ -68,7 +69,7 @@ function render() {
 
 function parseFrame(frame) {
 	"use strict";
-	var i, hand, nextLeapPlayerMap, nextPlayers, player;
+	var i, j, finger, lfinger, hand, nextLeapFingerMap, nextFingers, nextLeapPlayerMap, nextPlayers, player;
 
 	nextPlayers = [];
 	nextLeapPlayerMap = new Object();
@@ -90,6 +91,28 @@ function parseFrame(frame) {
 
 			nextPlayers.push(player);
 			nextLeapPlayerMap[hand.id] = player;
+
+			nextFingers = [];
+			nextLeapFingerMap = new Object();
+
+			for (j = 0; j < hand.fingers.length; ++j) {
+				lfinger = hand.fingers[j];
+
+				if (player.leapFingerMap[lfinger.id]) {
+					finger = player.leapFingerMap[lfinger.id];
+				} else {
+					finger = new Finger();
+				}
+
+				finger.x = lfinger.tipPosition[0];
+				finger.y = lfinger.tipPosition[2];
+
+				nextFingers.push(finger);
+				nextLeapFingerMap[lfinger] = finger;
+			}
+
+			player.fingers = nextFingers;
+			player.leapFingerMap = nextLeapFingerMap;
 		}
 	}
 
