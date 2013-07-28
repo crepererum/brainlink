@@ -178,6 +178,58 @@ function checkSequence() {
 	return true;
 }
 
+function guessPlane(objects) {
+	"use strict";
+	var i, j, m, x0, y0, z0, tmp, bestValue, bestVector, len;
+
+	x0 = 0;
+	y0 = 0;
+	z0 = 0;
+
+	for (i = 0; i < objects.length; ++i) {
+		x0 += objects[i].x / objects.length;
+		y0 += objects[i].y / objects.length;
+		z0 += objects[i].z / objects.length;
+	}
+
+	m = [];
+	for (i = 0; i < objects.length; ++i) {
+		m.push([
+				objects[i].x - x0,
+				objects[i].y - y0,
+				objects[i].z - z0
+				]);
+	}
+	tmp = numeric.svd(m);
+
+	for (i = 0; i < tmp.S.length; ++i) {
+		if (!bestValue || (tmp.S[i][i] < bestValue)) {
+			bestValue = tmp.S[i][i];
+			bestVector = [];
+
+			for (j = 0; j < tmp.V.length; ++j) {
+				bestVector.push(tmp.V[j][i]);
+			}
+		}
+	}
+
+	len = Math.sqrt(bestVector[0] * bestVector[0] + bestVector[1] * bestVector[1] + bestVector[2] + bestVector[2]);
+	bestVector[0] /= len;
+	bestVector[1] /= len;
+	bestVector[2] /= len;
+
+	return {
+		A: bestVector[0],
+		B: bestVector[1],
+		C: bestVector[2],
+		D: (x0 * bestVector[0] + y0 * bestVector[1] + z0 * bestVector[2])
+	};
+}
+
+function diffPlanePoint(plane, point) {
+	return (plane.A * point.x + plane.B * point.y + plane.C * point.z - plane.D) / Math.sqrt(plane.A * plane.A + plane.B * plane.B + plane.C * plane.C);
+}
+
 
 /**********************************************************/
 /******************THREADS*********************************/
@@ -224,7 +276,7 @@ function render() {
 
 function parseFrame(frame) {
 	"use strict";
-	var i, j, finger, fingersChanged, lfinger, hand, nextLeapFingerMap, nextFingers, nextLeapPlayerMap, nextPlayers, player;
+	var i, j, finger, fingersChanged, lfinger, hand, nextLeapFingerMap, nextFingers, nextLeapPlayerMap, nextPlayers, plane, player, pointsFingers;
 
 	nextPlayers = [];
 	nextLeapPlayerMap = new Object();
@@ -250,6 +302,7 @@ function parseFrame(frame) {
 			nextFingers = [];
 			nextLeapFingerMap = new Object();
 			fingersChanged = false;
+			pointsFingers = [];
 
 			for (j = 0; j < hand.fingers.length; ++j) {
 				lfinger = hand.fingers[j];
@@ -264,15 +317,38 @@ function parseFrame(frame) {
 				finger.x = lfinger.tipPosition[0];
 				finger.y = lfinger.tipPosition[2];
 
-				if (finger.active && ((hand.palmPosition[1] - lfinger.tipPosition[1]) < 15)) {
-					finger.active = false;
-				}
-				if (!finger.active && ((hand.palmPosition[1] - lfinger.tipPosition[1]) > 20)) {
-					finger.active = true;
-				}
-
 				nextFingers.push(finger);
 				nextLeapFingerMap[lfinger.id] = finger;
+
+				pointsFingers.push({
+					x: lfinger.tipPosition[0],
+					y: lfinger.tipPosition[1],
+					z: lfinger.tipPosition[2],
+					f: finger
+				});
+			}
+
+			pointsFingers.push({
+				x: hand.palmPosition[0],
+				y: hand.palmPosition[1],
+				z: hand.palmPosition[2]
+			});
+
+			if (pointsFingers.length >= 3) {
+				plane = guessPlane(pointsFingers);
+
+				for (i = 0; i < pointsFingers.length; ++i) {
+					if (pointsFingers[i].f) {
+						finger = pointsFingers[i].f;
+
+						if (finger.active && (diffPlanePoint(plane, pointsFingers[i]) < 5)) {
+							finger.active = false;
+						}
+						if (!finger.active && (diffPlanePoint(plane, pointsFingers[i]) > 10)) {
+							finger.active = true;
+						}
+					}
+				}
 			}
 
 			if (player.fingers.length !== nextFingers.length) {
