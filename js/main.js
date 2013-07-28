@@ -36,9 +36,13 @@ function say(msg, callback) {
 
 function render() {
 	"use strict";
-	var i, j, finger, player;
+	var i, j, finger, player, scaleFactor;
 
+	scaleFactor = Math.min(canvas.width, canvas.height) / 400;
+	ctx.setTransform(1, 0, 0, 1, 0, 0);
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.scale(scaleFactor, scaleFactor);
+	ctx.translate(200 + (canvas.width / scaleFactor - 400) / 2, 200 + (canvas.height / scaleFactor - 400) / 2);
 
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
