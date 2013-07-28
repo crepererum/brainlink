@@ -93,15 +93,19 @@ function say(msg, callback) {
 }
 
 function pos2arg(x, y) {
-	if ((x > 0) && (y > 0)) {
+	if ((x > 0) && (y >= 0)) {
 		return Math.atan(y / x);
 	} else if ((x < 0) && (y > 0)) {
 		return Math.PI - Math.atan(y / (-x));
-	} else if ((x < 0) && (y < 0)) {
+	} else if ((x < 0) && (y <= 0)) {
 		return Math.PI + Math.atan((-y) / (-x));
 	} else if ((x > 0) && (y < 0)) {
 		return 2 * Math.PI - Math.atan((-y) / x);
-	} else {
+	} else if ((x === 0) && (y > 0)) {
+		return 0.5 * Math.PI;
+	} else if ((x === 0) && (y < 0)) {
+		return 1.5 * Math.PI;
+	} {
 		return NaN;
 	}
 }
