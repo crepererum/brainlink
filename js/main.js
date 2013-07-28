@@ -9,6 +9,7 @@ var leapPlayerMap = new Object();
 var gameState;
 var freeze = false;
 var players = [];
+var nonDeadPlayers;
 var totalPlayers;
 var activePlayer;
 
@@ -283,6 +284,7 @@ function parseFrame(frame) {
 
 function keyPress(evt) {
 	"use strict";
+	var i;
 
 	evt.preventDefault();
 
@@ -292,6 +294,12 @@ function keyPress(evt) {
 			say("Let's begin!");
 			enumerateObjects(players)
 			totalPlayers = players.length;
+
+			nonDeadPlayers = [];
+			for (i = 0; i < players.length; ++i) {
+				nonDeadPlayers.push(players[i].id);
+			}
+
 			gameState = GAME_STATES.PLAY;
 		}
 
@@ -310,7 +318,7 @@ function keyPress(evt) {
 
 function logic() {
 	"use strict";
-	var i, finger, nextFingers, player;
+	var i, finger, nextFingers, nextNonDeadPlayers, player;
 
 	// next player?
 	if (!freeze
@@ -367,6 +375,25 @@ function logic() {
 		}
 	}
 
+	// looking for dead players
+	if (!freeze
+			&& (gameState == GAME_STATES.PLAY)) {
+		nextNonDeadPlayers = [];
+		for (i = 0; i < nonDeadPlayers.length; ++i) {
+			if (getPlayer(nonDeadPlayers[i]) || (freeze === FREEZE_STATES.WAIT_SPEECH)) {
+				nextNonDeadPlayers.push(nonDeadPlayers[i]);
+			} else {
+				say("We lost player " + nonDeadPlayers[i] + "!");
+				freeze = FREEZE_STATES.WAIT_SPEECH;
+				window.setTimeout(function() {
+					freeze = FREEZE_STATES.NONE;
+				}, 1000);
+			}
+		}
+		nonDeadPlayers = nextNonDeadPlayers;
+	}
+
+	// all players dead?
 	if (!freeze
 			&& (gameState == GAME_STATES.PLAY)
 			&& (players.length === 0)) {
