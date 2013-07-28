@@ -12,6 +12,7 @@ function Finger() {
 	self.id = 0;
 	self.x = 0;
 	self.y = 0;
+	self.active = false;
 }
 
 function Player() {
@@ -23,7 +24,6 @@ function Player() {
 	self.y = 0;
 	self.fingers = [];
 	self.leapFingerMap = new Object();
-	self.active = false;
 
 	self.enumerateFingers = enumerateFingers;
 
