@@ -340,6 +340,8 @@ function logic() {
 
 		if (!activePlayer) {
 			activePlayer = 1;
+		} else {
+			activePlayer = 1 + (activePlayer % totalPlayers);
 		}
 
 		while (!getPlayer(activePlayer)) {
