@@ -19,6 +19,8 @@ var currentFingers = new Object();
 
 var pulses = [];
 
+var synths = [];
+
 
 /**********************************************************/
 /******************ENUMS***********************************/
@@ -34,6 +36,14 @@ var FREEZE_STATES = {
 	NONE: false,
 	WAIT_PUNISH: 1,
 	WAIT_SPEECH: 2
+};
+
+var FREQUENCIES = {
+	1: 32.70, // C1
+	2: 36.71, // D1
+	3: 41.20, // E1
+	4: 43.65, // F1
+	5: 49.00  // G1
 };
 
 /**********************************************************/
@@ -446,10 +456,13 @@ function logic() {
 				nextFingers[finger.id] = true;
 
 				if (!currentFingers[finger.id]) {
-					say(finger.id);
 					currentSequence.push(finger.id);
 					pulses.push(new Pulse(finger.x, finger.y));
+					console.log("Play " + finger.id);
+					synths[finger.id].play();
 				}
+			} else if (finger.id !== 0) {
+				synths[finger.id].pause();
 			}
 		}
 		currentFingers = nextFingers;
@@ -457,6 +470,13 @@ function logic() {
 		// check sequence
 		if (!checkSequence()) {
 			say("Player " + activePlayer + ", you are wrong! Game members, feel free to punish him! Press space when you are ready!");
+			synths["fail"].play();
+			window.setTimeout(function() {
+				synths["fail"].pause();
+			}, 1000);
+			for (i = 1; i <= 5; ++i) {
+				synths[i].pause();
+			}
 			freeze = FREEZE_STATES.WAIT_PUNISH;
 		}
 	}
@@ -503,6 +523,7 @@ function logic() {
 
 function init() {
 	"use strict";
+	var i;
 
 	gameState = GAME_STATES.BOOT;
 
@@ -518,6 +539,32 @@ function init() {
 
 	meSpeak.loadConfig("data/mespeak_config.json");
 	meSpeak.loadVoice("data/mespeak_en.json");
+
+	for (i = 1; i <=5; ++i) {
+		flock.init();
+		synths[i] = flock.synth({
+			synthDef: [
+				{
+					id: "leftSynth_" + i,
+					ugen: "flock.ugen.triOsc",
+					fleq: FREQUENCIES[i]
+				},
+				{
+					id: "rightSynth_" + i,
+					ugen: "flock.ugen.triOsc",
+					freq: FREQUENCIES[i] + 2
+				}
+			]
+		});
+	}
+	flock.init();
+	synths["fail"] = flock.synth({
+		synthDef: {
+			ugen: "flock.ugen.lfPulse",
+			freq: 1000,
+			mul: 0.1
+		}
+	});
 
 	document.addEventListener("keydown", keyPress);
 
