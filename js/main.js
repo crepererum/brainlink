@@ -17,6 +17,8 @@ var storedSequence = [];
 var currentSequence = [];
 var currentFingers = new Object();
 
+var pulses = [];
+
 
 /**********************************************************/
 /******************ENUMS***********************************/
@@ -44,6 +46,7 @@ function Finger() {
 	self.id = 0;
 	self.x = 0;
 	self.y = 0;
+	self.rotation = 0;
 	self.active = false;
 }
 
@@ -54,6 +57,7 @@ function Player() {
 	self.id = 0;
 	self.x = 0;
 	self.y = 0;
+	self.size = 50;
 	self.fingers = [];
 	self.leapFingerMap = new Object();
 
@@ -73,6 +77,15 @@ function Player() {
 
 		enumerateObjects(self.fingers, self, mean);
 	}
+}
+
+function Pulse(_x, _y) {
+	"use strict";
+	var self = this;
+
+	self.x = _x;
+	self.y = _y;
+	self.phase = 0;
 }
 
 
@@ -184,7 +197,7 @@ function checkSequence() {
 /**********************************************************/
 function render() {
 	"use strict";
-	var i, j, finger, player, scaleFactor;
+	var i, j, x, finger, player, scaleFactor;
 
 	scaleFactor = Math.min(canvas.width, canvas.height) / 400;
 	ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -195,27 +208,85 @@ function render() {
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
 
+	for (i = 0; i < pulses.length; ++i) {
+		x = Math.round((1 - pulses[i].phase) * 127).toString(16);
+		if (x.length == 1) {
+			x = "0" + x;
+		}
+
+		ctx.beginPath();
+		ctx.lineWidth = 4;
+		ctx.strokeStyle = "#" + x + x + x;
+		ctx.arc(pulses[i].x, pulses[i].y, pulses[i].phase * 200, 0, 2 * Math.PI);
+		ctx.stroke();
+		ctx.closePath();
+	}
+
 	for (i = 0; i < players.length; ++i) {
 		player = players[i];
 
-		if (player.id === activePlayer) {
-			ctx.fillStyle = "#00ff00";
+		ctx.beginPath();
+		ctx.arc(player.x, player.y, player.size, 0, 2 * Math.PI);
+		if ((player.id === activePlayer) && (freeze === FREEZE_STATES.WAIT_PUNISH)) {
+			ctx.fillStyle = "#220000";
+			ctx.strokeStyle = "#bb1111";
 		} else {
-			ctx.fillStyle = "#ffffff";
+			ctx.fillStyle = "#000022";
+			ctx.strokeStyle = "#1111bb";
 		}
-		ctx.font = "30px Arial";
-		ctx.fillText(player.id, player.x, player.y);
+		if (player.id === activePlayer) {
+			ctx.fill();
+			ctx.lineWidth = 2;
+		} else {
+			ctx.lineWidth = 1;
+		}
+		ctx.stroke();
+		ctx.closePath();
+
+		if (player.id !== 0) {
+			if ((player.id === activePlayer) && (freeze === FREEZE_STATES.WAIT_PUNISH)) {
+				ctx.fillStyle = "#bb1111";
+			} else {
+				ctx.fillStyle = "#1111bb";
+			}
+			ctx.font = "30px Arial";
+			ctx.fillText(player.id, player.x, player.y);
+		}
 
 		for (j = 0; j < player.fingers.length; ++j) {
 			finger = player.fingers[j];
 
-			if (finger.active) {
-				ctx.fillStyle = "#00ff00";
+			ctx.save();
+			ctx.translate(finger.x, finger.y);
+			ctx.rotate(finger.rotation);
+
+			ctx.beginPath();
+			ctx.rect(-10, -15, 20, 30);
+			if ((player.id === activePlayer) && (freeze === FREEZE_STATES.WAIT_PUNISH)) {
+				ctx.fillStyle = "#220000";
+				ctx.strokeStyle = "#bb1111";
 			} else {
-				ctx.fillStyle = "#ffffff";
+				ctx.fillStyle = "#002200";
+				ctx.strokeStyle = "#11bb11";
+			}
+			if (finger.active) {
+				ctx.fill();
+				ctx.lineWidth = 3;
+			} else {
+				ctx.lineWidth = 1;
+			}
+			ctx.stroke();
+			ctx.closePath();
+
+			if ((player.id === activePlayer) && (freeze === FREEZE_STATES.WAIT_PUNISH)) {
+				ctx.fillStyle = "#bb1111";
+			} else {
+				ctx.fillStyle = "#11bb11";
 			}
 			ctx.font = "15px Arial";
-			ctx.fillText(finger.id, finger.x, finger.y);
+			ctx.fillText(finger.id, 0, 0);
+
+			ctx.restore();
 		}
 	}
 
@@ -243,6 +314,7 @@ function parseFrame(frame) {
 		if (player) {
 			player.x = hand.palmPosition[0];
 			player.y = hand.palmPosition[2];
+			player.size = hand.sphereRadius / 2;
 
 			nextPlayers.push(player);
 			nextLeapPlayerMap[hand.id] = player;
@@ -263,6 +335,7 @@ function parseFrame(frame) {
 
 				finger.x = lfinger.tipPosition[0];
 				finger.y = lfinger.tipPosition[2];
+				finger.rotation = lfinger.direction[0];
 
 				if (finger.active && ((hand.palmPosition[1] - lfinger.tipPosition[1]) < 15)) {
 					finger.active = false;
@@ -328,7 +401,7 @@ function keyPress(evt) {
 
 function logic() {
 	"use strict";
-	var i, finger, nextFingers, nextNonDeadPlayers, player;
+	var i, finger, nextFingers, nextNonDeadPlayers, nextPulses, player;
 
 	// next player?
 	if (!freeze
@@ -375,6 +448,7 @@ function logic() {
 				if (!currentFingers[finger.id]) {
 					say(finger.id);
 					currentSequence.push(finger.id);
+					pulses.push(new Pulse(finger.x, finger.y));
 				}
 			}
 		}
@@ -413,6 +487,16 @@ function logic() {
 		activePlayer = undefined;
 		gameState = GAME_STATES.END;
 	}
+
+	// animation
+	nextPulses = [];
+	for (i = 0; i < pulses.length; ++i) {
+		pulses[i].phase += 0.04;
+		if (pulses[i].phase < 1) {
+			nextPulses.push(pulses[i]);
+		}
+	}
+	pulses = nextPulses;
 
 	window.setTimeout(logic, 50);
 }
