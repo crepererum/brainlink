@@ -4,6 +4,14 @@ module.exports = function(grunt) {
 	// project config
 	grunt.initConfig({
 		pkg: grunt.file.readJSON("package.json"),
+		csslint: {
+			files: [
+				"css/main.css"
+			],
+			options: {
+				ids: false
+			}
+		},
 		jshint: {
 			files: [
 				"Gruntfile.js",
@@ -39,9 +47,10 @@ module.exports = function(grunt) {
 	});
 
 	// load other grunt modules
+	grunt.loadNpmTasks("grunt-contrib-csslint");
 	grunt.loadNpmTasks("grunt-contrib-jshint");
 
 	// register TODOs
-	grunt.registerTask("default", ["jshint"]);
+	grunt.registerTask("default", ["csslint", "jshint"]);
 };
 
