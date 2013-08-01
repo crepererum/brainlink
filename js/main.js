@@ -39,11 +39,11 @@ var FREEZE_STATES = {
 };
 
 var FREQUENCIES = {
-	1: 32.70, // C1
-	2: 36.71, // D1
-	3: 41.20, // E1
-	4: 43.65, // F1
-	5: 49.00  // G1
+	1: 261.6, // C4
+	2: 293.7, // D4
+	3: 329.6, // E4
+	4: 349.2, // F4
+	5: 415.3  // G4
 };
 
 
@@ -569,7 +569,7 @@ function init() {
 				{
 					id: "leftSynth_" + i,
 					ugen: "flock.ugen.triOsc",
-					fleq: FREQUENCIES[i]
+					freq: FREQUENCIES[i]
 				},
 				{
 					id: "rightSynth_" + i,
