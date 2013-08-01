@@ -316,7 +316,7 @@ function render() {
 
 function parseFrame(frame) {
 	"use strict";
-	var i, j, finger, fingersChanged, lfinger, hand, nextLeapFingerMap, nextFingers, nextLeapPlayerMap, nextPlayers, player;
+	var i, j, finger, fingersChanged, fingersMean, lfinger, hand, nextLeapFingerMap, nextFingers, nextLeapPlayerMap, nextPlayers, player;
 
 	nextPlayers = [];
 	nextLeapPlayerMap = {};
@@ -343,6 +343,7 @@ function parseFrame(frame) {
 			nextFingers = [];
 			nextLeapFingerMap = {};
 			fingersChanged = false;
+			fingersMean = 0.0;
 
 			for (j = 0; j < hand.fingers.length; ++j) {
 				lfinger = hand.fingers[j];
@@ -357,16 +358,25 @@ function parseFrame(frame) {
 				finger.x = lfinger.tipPosition[0];
 				finger.y = lfinger.tipPosition[2];
 				finger.rotation = lfinger.direction[0];
-
-				if (finger.active && ((hand.palmPosition[1] - lfinger.tipPosition[1]) < 15)) {
-					finger.active = false;
-				}
-				if (!finger.active && ((hand.palmPosition[1] - lfinger.tipPosition[1]) > 20)) {
-					finger.active = true;
-				}
+				fingersMean += lfinger.tipPosition[1] / hand.fingers.length;
 
 				nextFingers.push(finger);
 				nextLeapFingerMap[lfinger.id] = finger;
+			}
+
+			// need at least 3 fingers to detect active fingers
+			if (hand.fingers.length >= 3) {
+				for (j = 0; j < hand.fingers.length; ++j) {
+					lfinger = hand.fingers[j];
+					finger = nextLeapFingerMap[lfinger.id];
+
+					if (finger.active && ((fingersMean - lfinger.tipPosition[1]) < 12)) {
+						finger.active = false;
+					}
+					if (!finger.active && ((fingersMean - lfinger.tipPosition[1]) > 17)) {
+						finger.active = true;
+					}
+				}
 			}
 
 			if (player.fingers.length !== nextFingers.length) {
