@@ -473,17 +473,20 @@ function logic() {
 		for (i = 0; i < player.fingers.length; ++i) {
 			finger = player.fingers[i];
 
-			if ((finger.active) && (finger.id !== 0)) {
-				nextFingers[finger.id] = true;
+			if (finger.id !== 0) {
+				if (finger.active) {
+					nextFingers[finger.id] = true;
 
-				if (!currentFingers[finger.id]) {
-					currentSequence.push(finger.id);
-					pulses.push(new Pulse(finger.x, finger.y));
-					console.log("Play " + finger.id);
-					synths[finger.id].play();
+					if (!currentFingers[finger.id] &&
+							((currentSequence.length === 0) || (currentSequence[currentSequence.length - 1] !== finger.id))) {
+						currentSequence.push(finger.id);
+						pulses.push(new Pulse(finger.x, finger.y));
+						console.log("Play " + finger.id);
+						synths[finger.id].play();
+					}
+				} else {
+					synths[finger.id].pause();
 				}
-			} else if (finger.id !== 0) {
-				synths[finger.id].pause();
 			}
 		}
 		currentFingers = nextFingers;
