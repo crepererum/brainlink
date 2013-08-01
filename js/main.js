@@ -297,13 +297,15 @@ function render() {
 			ctx.stroke();
 			ctx.closePath();
 
-			if ((player.id === activePlayer) && (freeze === FREEZE_STATES.WAIT_PUNISH)) {
-				ctx.fillStyle = "#bb1111";
-			} else {
-				ctx.fillStyle = "#11bb11";
+			if (finger.id !== 0) {
+				if ((player.id === activePlayer) && (freeze === FREEZE_STATES.WAIT_PUNISH)) {
+					ctx.fillStyle = "#bb1111";
+				} else {
+					ctx.fillStyle = "#11bb11";
+				}
+				ctx.font = "15px Arial";
+				ctx.fillText(finger.id, 0, 0);
 			}
-			ctx.font = "15px Arial";
-			ctx.fillText(finger.id, 0, 0);
 
 			ctx.restore();
 		}
