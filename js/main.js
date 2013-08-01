@@ -4,7 +4,7 @@
 var canvas, ctx;
 
 var leap;
-var leapPlayerMap = new Object();
+var leapPlayerMap = {};
 
 var gameState;
 var freeze = false;
@@ -15,7 +15,7 @@ var activePlayer;
 
 var storedSequence = [];
 var currentSequence = [];
-var currentFingers = new Object();
+var currentFingers = {};
 
 var pulses = [];
 
@@ -46,58 +46,6 @@ var FREQUENCIES = {
 	5: 49.00  // G1
 };
 
-/**********************************************************/
-/******************OBJECTS*********************************/
-/**********************************************************/
-function Finger() {
-	"use strict";
-	var self = this;
-
-	self.id = 0;
-	self.x = 0;
-	self.y = 0;
-	self.rotation = 0;
-	self.active = false;
-}
-
-function Player() {
-	"use strict";
-	var self = this;
-
-	self.id = 0;
-	self.x = 0;
-	self.y = 0;
-	self.size = 50;
-	self.fingers = [];
-	self.leapFingerMap = new Object();
-
-	self.enumerateFingers = enumerateFingers;
-
-	function enumerateFingers() {
-		var i, mean;
-
-		mean = {
-			x: 0,
-			y: 0
-		};
-		for (i = 0; i < self.fingers.length; ++i) {
-			mean.x += self.fingers[i].x / self.fingers.length;
-			mean.y += self.fingers[i].y / self.fingers.length;
-		}
-
-		enumerateObjects(self.fingers, self, mean);
-	}
-}
-
-function Pulse(_x, _y) {
-	"use strict";
-	var self = this;
-
-	self.x = _x;
-	self.y = _y;
-	self.phase = 0;
-}
-
 
 /**********************************************************/
 /******************METHODS*********************************/
@@ -105,7 +53,7 @@ function Pulse(_x, _y) {
 function say(msg, callback) {
 	"use strict";
 
-	console.log('"' + msg + '"');
+	console.log("\"" + msg + "\"");
 	meSpeak.speak(String(msg), {
 		pitch: 40,
 		speed: 170,
@@ -118,6 +66,8 @@ function say(msg, callback) {
 }
 
 function pos2arg(x, y) {
+	"use strict";
+
 	if ((x > 0) && (y >= 0)) {
 		return Math.atan(y / x);
 	} else if ((x < 0) && (y > 0)) {
@@ -149,7 +99,7 @@ function enumerateObjects(objects, center, base) {
 		base = {
 			x: 0,
 			y: 1
-		}
+		};
 	}
 
 	toSort = [];
@@ -159,7 +109,8 @@ function enumerateObjects(objects, center, base) {
 
 		toSort.push([
 				objects[i],
-				pos2arg(relX, relY)]);
+				pos2arg(relX, relY)
+			]);
 	}
 
 	baseArg = pos2arg(base.x - center.x, base.y - center.y);
@@ -193,12 +144,70 @@ function checkSequence() {
 	var i;
 
 	for (i = 0; i < Math.min(storedSequence.length, currentSequence.length); ++i) {
-		if (storedSequence[i] != currentSequence[i]) {
+		if (storedSequence[i] !== currentSequence[i]) {
 			return false;
 		}
 	}
 
 	return true;
+}
+
+function unfreez() {
+	"use strict";
+
+	freeze = FREEZE_STATES.NONE;
+}
+
+
+/**********************************************************/
+/******************OBJECTS*********************************/
+/**********************************************************/
+function Finger() {
+	"use strict";
+	var self = this;
+
+	self.id = 0;
+	self.x = 0;
+	self.y = 0;
+	self.rotation = 0;
+	self.active = false;
+}
+
+function Player() {
+	"use strict";
+	var self = this;
+
+	self.id = 0;
+	self.x = 0;
+	self.y = 0;
+	self.size = 50;
+	self.fingers = [];
+	self.leapFingerMap = {};
+
+	function enumerateFingers() {
+		var i, mean;
+
+		mean = {
+			x: 0,
+			y: 0
+		};
+		for (i = 0; i < self.fingers.length; ++i) {
+			mean.x += self.fingers[i].x / self.fingers.length;
+			mean.y += self.fingers[i].y / self.fingers.length;
+		}
+
+		enumerateObjects(self.fingers, self, mean);
+	}
+	self.enumerateFingers = enumerateFingers;
+}
+
+function Pulse(_x, _y) {
+	"use strict";
+	var self = this;
+
+	self.x = _x;
+	self.y = _y;
+	self.phase = 0;
 }
 
 
@@ -220,7 +229,7 @@ function render() {
 
 	for (i = 0; i < pulses.length; ++i) {
 		x = Math.round((1 - pulses[i].phase) * 127).toString(16);
-		if (x.length == 1) {
+		if (x.length === 1) {
 			x = "0" + x;
 		}
 
@@ -308,13 +317,13 @@ function parseFrame(frame) {
 	var i, j, finger, fingersChanged, lfinger, hand, nextLeapFingerMap, nextFingers, nextLeapPlayerMap, nextPlayers, player;
 
 	nextPlayers = [];
-	nextLeapPlayerMap = new Object();
+	nextLeapPlayerMap = {};
 
 	for (i = 0; i < frame.hands.length; ++i) {
 		hand = frame.hands[i];
 		player = undefined;
 
-		if ((gameState == GAME_STATES.SEARCH_PLAYERS) && (!leapPlayerMap[hand.id]) && (hand.fingers.length == 5)) {
+		if ((gameState === GAME_STATES.SEARCH_PLAYERS) && (!leapPlayerMap[hand.id]) && (hand.fingers.length === 5)) {
 			say("Player detected.");
 			player = new Player();
 		} else if (leapPlayerMap[hand.id]) {
@@ -330,7 +339,7 @@ function parseFrame(frame) {
 			nextLeapPlayerMap[hand.id] = player;
 
 			nextFingers = [];
-			nextLeapFingerMap = new Object();
+			nextLeapFingerMap = {};
 			fingersChanged = false;
 
 			for (j = 0; j < hand.fingers.length; ++j) {
@@ -383,9 +392,9 @@ function keyPress(evt) {
 
 	// space?
 	if (evt.keyCode === 32) {
-		if ((gameState == GAME_STATES.SEARCH_PLAYERS) && (players.length > 0)) {
+		if ((gameState === GAME_STATES.SEARCH_PLAYERS) && (players.length > 0)) {
 			say("Let's begin!");
-			enumerateObjects(players)
+			enumerateObjects(players);
 			totalPlayers = players.length;
 
 			nonDeadPlayers = [];
@@ -401,7 +410,7 @@ function keyPress(evt) {
 
 			freeze = FREEZE_STATES.WAIT_SPEECH;
 			window.setTimeout(function() {
-				currentFingers = new Object();
+				currentFingers = {};
 				currentSequence = [];
 				freeze = FREEZE_STATES.NONE;
 			}, 400);
@@ -414,10 +423,10 @@ function logic() {
 	var i, finger, nextFingers, nextNonDeadPlayers, nextPulses, player;
 
 	// next player?
-	if (!freeze
-			&& (gameState == GAME_STATES.PLAY)
-			&& (players.length > 0)
-			&& ((!activePlayer) || ((currentSequence.length > storedSequence.length) && checkSequence()))) {
+	if (!freeze &&
+			(gameState === GAME_STATES.PLAY) &&
+			(players.length > 0) &&
+			((!activePlayer) || ((currentSequence.length > storedSequence.length) && checkSequence()))) {
 		storedSequence = currentSequence;
 		currentSequence = [];
 
@@ -431,7 +440,7 @@ function logic() {
 			activePlayer = 1 + (activePlayer % totalPlayers);
 		}
 
-		currentFingers = new Object();
+		currentFingers = {};
 
 		freeze = FREEZE_STATES.WAIT_SPEECH;
 		window.setTimeout(function() {
@@ -444,11 +453,11 @@ function logic() {
 	}
 
 	// analyze state
-	if (!freeze
-			&& (gameState == GAME_STATES.PLAY)
-			&& (player = getPlayer(activePlayer))) {
+	if (!freeze &&
+			(gameState === GAME_STATES.PLAY) &&
+			(player = getPlayer(activePlayer))) {
 		// check fingers
-		nextFingers = new Object();
+		nextFingers = {};
 		for (i = 0; i < player.fingers.length; ++i) {
 			finger = player.fingers[i];
 
@@ -470,9 +479,9 @@ function logic() {
 		// check sequence
 		if (!checkSequence()) {
 			say("Player " + activePlayer + ", you are wrong! Game members, feel free to punish him! Press space when you are ready!");
-			synths["fail"].play();
+			synths.fail.play();
 			window.setTimeout(function() {
-				synths["fail"].pause();
+				synths.fail.pause();
 			}, 1000);
 			for (i = 1; i <= 5; ++i) {
 				synths[i].pause();
@@ -482,8 +491,8 @@ function logic() {
 	}
 
 	// looking for dead players
-	if (!freeze
-			&& (gameState == GAME_STATES.PLAY)) {
+	if (!freeze &&
+			(gameState === GAME_STATES.PLAY)) {
 		nextNonDeadPlayers = [];
 		for (i = 0; i < nonDeadPlayers.length; ++i) {
 			if (getPlayer(nonDeadPlayers[i]) || (freeze === FREEZE_STATES.WAIT_SPEECH)) {
@@ -491,18 +500,16 @@ function logic() {
 			} else {
 				say("We lost player " + nonDeadPlayers[i] + "!");
 				freeze = FREEZE_STATES.WAIT_SPEECH;
-				window.setTimeout(function() {
-					freeze = FREEZE_STATES.NONE;
-				}, 1000);
+				window.setTimeout(unfreez, 1000);
 			}
 		}
 		nonDeadPlayers = nextNonDeadPlayers;
 	}
 
 	// all players dead?
-	if (!freeze
-			&& (gameState == GAME_STATES.PLAY)
-			&& (players.length === 0)) {
+	if (!freeze &&
+			(gameState === GAME_STATES.PLAY) &&
+			(players.length === 0)) {
 		say("You are drunk. The game ends now!");
 		activePlayer = undefined;
 		gameState = GAME_STATES.END;
@@ -558,7 +565,7 @@ function init() {
 		});
 	}
 	flock.init();
-	synths["fail"] = flock.synth({
+	synths.fail = flock.synth({
 		synthDef: {
 			ugen: "flock.ugen.lfPulse",
 			freq: 1000,
@@ -573,7 +580,7 @@ function init() {
 	window.requestAnimationFrame(render);
 	window.setTimeout(logic, 50);
 
-	say("Welcome, my name is Aurora. I'm your brainmaster. Just put your 5 finger hands over the leap device and press space when all players are detected.")
+	say("Welcome, my name is Aurora. I'm your brainmaster. Just put your 5 finger hands over the leap device and press space when all players are detected.");
 }
 
 

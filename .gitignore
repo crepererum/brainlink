@@ -1,0 +1,6 @@
+# build stuff
+node_modules/*
+
+# tmp files
+*.swp
+
