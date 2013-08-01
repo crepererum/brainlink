@@ -1,6 +1,9 @@
 # build stuff
 node_modules/*
 
+# logs, dumps and other runtime noise
+*.bin
+
 # tmp files
 *.swp
 
