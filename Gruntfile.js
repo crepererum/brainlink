@@ -51,6 +51,6 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks("grunt-contrib-jshint");
 
 	// register TODOs
-	grunt.registerTask("default", ["csslint", "jshint"]);
+	grunt.registerTask("test", ["csslint", "jshint"]);
 };
 
