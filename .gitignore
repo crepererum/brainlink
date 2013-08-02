@@ -3,6 +3,7 @@ node_modules/*
 release/*
 
 # logs, dumps and other runtime noise
+gh-pages/*
 *.bin
 
 # tmp files
