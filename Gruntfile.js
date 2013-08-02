@@ -4,18 +4,42 @@ module.exports = function(grunt) {
 	// project config
 	grunt.initConfig({
 		pkg: grunt.file.readJSON("package.json"),
+		clean: [
+			"release"
+		],
+		copy: [
+			{
+				expand: true,
+				cwd: "src/",
+				src: "*",
+				dest: "release/",
+				filter: "isFile"
+			},
+			{
+				expand: true,
+				cwd: "extern/",
+				src: "**",
+				dest: "release"
+			}
+		],
 		csslint: {
 			files: [
-				"css/main.css"
+				"src/css/main.css"
 			],
 			options: {
 				ids: false
 			}
 		},
+		cssmin: {
+			minify: {
+				src: "src/css/*.css",
+				dest: "release/css/main.css"
+			}
+		},
 		jshint: {
 			files: [
 				"Gruntfile.js",
-				"js/main.js"
+				"src/js/main.js"
 			],
 			options: {
 				browser: true,
@@ -43,14 +67,31 @@ module.exports = function(grunt) {
 				undef: true,
 				unused: true
 			}
+		},
+		uglify: {
+			build: {
+				options: {
+					sourceMap: "release/js/main.sourcemap.js",
+					sourceMappingURL: "js/main.sourcemap.js"
+				},
+				files: {
+					"release/js/main.js": ["src/js/*.js"]
+				}
+			}
 		}
 	});
 
 	// load other grunt modules
+	grunt.loadNpmTasks("grunt-contrib-clean");
+	grunt.loadNpmTasks("grunt-contrib-copy");
 	grunt.loadNpmTasks("grunt-contrib-csslint");
+	grunt.loadNpmTasks("grunt-contrib-cssmin");
 	grunt.loadNpmTasks("grunt-contrib-jshint");
+	grunt.loadNpmTasks("grunt-contrib-uglify");
 
 	// register TODOs
+	grunt.registerTask("build", ["clean", "copy", "cssmin", "uglify"]);
 	grunt.registerTask("test", ["csslint", "jshint"]);
+	grunt.registerTask("default", ["test", "build"]);
 };
 
